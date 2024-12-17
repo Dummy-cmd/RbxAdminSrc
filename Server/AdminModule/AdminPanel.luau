@@ -18,6 +18,10 @@ local OrderedBanListData = DataStoreService:GetOrderedDataStore("OrderedBanList_
 local panel = {}
 panel.client = {}
 
+--[[
+	banCheck()
+	@Argument: Player
+]]
 panel.banCheck = function(plr)
 	if (plr) then
 		local checkData = function()
@@ -40,6 +44,11 @@ panel.banCheck = function(plr)
 	end
 end
 
+--[[
+	loadBanLogs()
+	@Argument:
+	@return a table with 100 users or all banned users if is lower than 100
+]]
 panel.loadBanLogs = function()
 	local ascending = false
 	local page = nil
@@ -64,12 +73,23 @@ end
 
 panel.__index = panel
 
+--[[
+	SpawnThread(fn)
+	@Argument: function
+	@return a thread with current passed function from the panel table.
+	@ex: SpawnThread("loadBanLogs") -> load the "loadBanLogs" function from the panel table
+]]
 function panel:SpawnThread(fn)
 	return task.spawn(panel[fn])
 end
 
 panel:SpawnThread("loadBanLogs")
 
+--[[
+	accesToAdminPanel(user)
+	@Argument: user
+	@return a remote function invoke to client to enable user commands.
+]]
 function panel:accesToAdminPanel(user)
 	assert(RunService:IsServer(),"panel.accesToAdminPanel function canno't be run on client side.")
 	if (user) then
@@ -83,6 +103,11 @@ function panel:accesToAdminPanel(user)
 	end
 end
 
+--[[
+	connectUser(user)
+	@Argument: user
+	@return connect and remote function invoke to client to enable user commands.
+]]
 function panel:connectUser(user)
 	assert(RunService:IsServer(),"panel.connectUser function canno't be run on client side.")
 	assert(type(user) == "string","user must be a string value")	
@@ -103,6 +128,11 @@ function panel:connectUser(user)
 	return self
 end
 
+--[[
+	disconnectUser(user)
+	@Argument: user
+	@return disconnect and disable user commands.
+]]
 function panel:disconnectUser(user)
 	assert(RunService:IsServer(),"panel.disconnectUser function canno't be run on client side.")
 	assert(type(user) == "string","user must be a string value")	
@@ -111,6 +141,11 @@ function panel:disconnectUser(user)
 	return print(user,"<Server> - [user] has been disconnected.")
 end
 
+--[[
+	getConnectedUser(user)
+	@Argument: user
+	@return a table with user connected.
+]]
 function panel:getConnectedUser(user)
 	local userId = Players:GetUserIdFromNameAsync(user)
 	local transformToAPlayer = Players:GetPlayerByUserId(userId)
@@ -118,20 +153,23 @@ function panel:getConnectedUser(user)
 	return self[transformToAPlayer.Name] or {}
 end
 
-function panel:autoBindUser(users:{}) : RBXScriptSignal
-	return Players.PlayerAdded:Connect(function(player)
-		if (table.find(users,player.Name)) then
-			if not self[player.Name] then
-				self[player.Name] = {
-					PermissionAllowed = true,
-					UserSetting = player.Name,
-					player = player,
-					Usercommands = require(script:WaitForChild("commands"))
-				}
-				self:accesToAdminPanel(self[player.Name])
-			end			
-		end
-	end)
+--[[
+	autoBindUser(users:{})
+	@Argument: users
+	@return connect and remote function invoke to client to enable user commands.
+]]
+function panel:autoBindUser(users:{})
+	for i,player in pairs(users) do
+		if not self[player.Name] then
+			self[player.Name] = {
+				PermissionAllowed = true,
+				UserSetting = player.Name,
+				player = player,
+				Usercommands = require(script:WaitForChild("commands"))
+			}
+			self:accesToAdminPanel(self[player.Name])
+		end	
+	end
 end
 
 return panel
