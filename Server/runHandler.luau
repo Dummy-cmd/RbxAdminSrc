@@ -1,3 +1,11 @@
+--[[
+@Dummy:
+
+Server-Script (main)
+
+This is where all main RemoteEvent.OnServerEvent's are handled from the AdminPanelModule.
+]]
+
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
@@ -11,15 +19,18 @@ local TableUtil = require(ReplicatedStorage.Coutainer.TableUtil)
 
 local logs = require(script.AdminPanel.commands.logs)
 
-
--------
 local AdminPanelController = require(script:WaitForChild("AdminPanel"))
 local signal = require(script:WaitForChild("AdminPanel").signal)
 
-AdminPanelController:autoBindUser({"evxry_ll"})
-
 local PlayersTracker = {}
 
+
+--[[
+	RemoteEvent where a command try to be fired.
+	@Arguments:
+		- player : Player
+		- any
+]]
 ReplicatedStorage.Coutainer.RE.ExecuteAdminCommand.OnServerEvent:Connect(function(player,command)
 	warn("Server - Function [command] = Created")
 	local function preloadCommandExecutor()
@@ -46,6 +57,10 @@ ReplicatedStorage.Coutainer.RE.ExecuteAdminCommand.OnServerEvent:Connect(functio
 	end):catch(warn)
 end)
 
+--[[
+	On each player added, the player will be added to the AdminPanel.
+	also we check if the current player is banned or not and added it to the join_logs [e.g logsModule].
+]]
 Players.PlayerAdded:Connect(function(player)
 	PlayersTracker[player] = tick()
 	if (table.find(logs._joins,player.UserId)) then
@@ -54,8 +69,12 @@ Players.PlayerAdded:Connect(function(player)
 		table.insert(logs._joins,player.UserId)
 	end
 	AdminPanelController.banCheck(player)
+	AdminPanelController:autoBindUser({player})
 end)
 
+--[[
+	On each player removed, the player will be added to leave_logs [e.g logsModule]
+]]
 Players.PlayerRemoving:Connect(function(player)
 	PlayersTracker[player] = nil
 	if (table.find(logs._leaves,player.UserId)) then
@@ -65,6 +84,9 @@ Players.PlayerRemoving:Connect(function(player)
 	end
 end)
 
+--[[
+	update every 30 seconds to check if the player is banned or not.
+]]
 RunService.Stepped:Connect(function()
 	for plr,lastTick in pairs(PlayersTracker) do
 		local currentTick = tick()
